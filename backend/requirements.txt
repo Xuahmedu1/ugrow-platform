@@ -1,7 +1,64 @@
-fastapi==0.135.1
-uvicorn==0.41.0
-python-multipart==0.0.22
-openpyxl==3.1.5
-pydantic==2.12.5
-python-jose[cryptography]==3.5.0
+# UGROW Backend Dependencies
+# FastAPI + PostgreSQL + Authentication + Excel Processing
+
+# ============================================
+# Web Framework
+# ============================================
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# ============================================
+# Database
+# ============================================
+sqlalchemy==2.0.25
+psycopg[binary]==3.2.9
+alembic==1.13.1
+
+# ============================================
+# Authentication & Security
+# ============================================
+python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+bcrypt==4.1.2
+cryptography==42.0.0
+
+# ============================================
+# Data Validation
+# ============================================
+pydantic==2.5.3
+pydantic-settings==2.1.0
+email-validator==2.1.0.post1
+
+# ============================================
+# Excel Processing
+# ============================================
+pandas==2.2.0
+openpyxl==3.1.2
+xlrd==2.0.1
+XlsxWriter==3.1.9
+
+# ============================================
+# Environment
+# ============================================
+python-dotenv==1.0.0
+
+# ============================================
+# Testing (Development)
+# ============================================
+pytest==7.4.4
+pytest-asyncio==0.23.4
+httpx==0.26.0
+
+# ============================================
+# Code Quality (Development)
+# ============================================
+black==24.1.1
+isort==5.13.2
+mypy==1.8.0
+flake8==7.0.0
+
+# ============================================
+# Optional: Redis for caching
+# ============================================
+# redis==5.0.1
