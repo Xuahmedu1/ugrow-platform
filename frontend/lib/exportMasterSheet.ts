@@ -1,424 +1,277 @@
-import * as XLSX from "xlsx";
-import type { PlatformKPIResult, KPIResult, PlatformType } from "@/lib/types";
+/**
+ * UGROW Master Sheet Export
+ * Exports KPI data to Excel with UGROW brand styling
+ * Matches the original HTML design
+ */
 
-// ─── Platform config ──────────────────────────────────────────────────────────
+import * as XLSX from 'xlsx';
+import type { KPIResult, PlatformKPIResult, Restaurant } from './types';
 
-const PLATFORM_ORDER: PlatformType[] = [
-  "talabat",
-  "keeta",
-  "noon",
-  "careem",
-  "deliveroo",
-  "smiles",
-];
-
-const PLATFORM_LABELS: Record<PlatformType, string> = {
-  talabat: "Talabat",
-  keeta: "Keeta",
-  noon: "Noon",
-  careem: "Careem",
-  deliveroo: "Deliveroo",
-  smiles: "Smiles",
+// Platform colors (matching the HTML design)
+const PLATFORM_COLORS = {
+  talabat: { bg: 'FF9900', text: '000000' },    // Orange
+  keeta: { bg: 'FFE599', text: '000000' },       // Light Yellow
+  noon: { bg: '1155CC', text: 'FFFFFF' },        // Blue
+  careem: { bg: '38761D', text: 'FFFFFF' },       // Green
+  deliveroo: { bg: '00B2A9', text: 'FFFFFF' },    // Teal
+  eateasily: { bg: 'CC0000', text: 'FFFFFF' },   // Red
+  smiles: { bg: 'FF6B6B', text: 'FFFFFF' },      // Light Red
 };
 
-// Platform header colors (ARGB format for xlsx)
-const PLATFORM_HEADER_FILL: Record<PlatformType, string> = {
-  talabat: "FFFF9900",
-  keeta: "FFFFF2CC",
-  noon: "FF1155CC",
-  careem: "FF38761D",
-  deliveroo: "FF00B2A9",
-  smiles: "FFCC0000",
+// UGROW Brand colors
+const BRAND_COLORS = {
+  purple: 'A64D79',      // Header background
+  lightPurple: 'EAD1DC', // Label background
+  darkPurple: '674EA7',  // Meta value background
+  white: 'FFFFFF',
+  black: '000000',
 };
 
-const PLATFORM_HEADER_FONT: Record<PlatformType, string> = {
-  talabat: "FF000000",
-  keeta: "FF000000",
-  noon: "FFFFFFFF",
-  careem: "FFFFFFFF",
-  deliveroo: "FFFFFFFF",
-  smiles: "FFFFFFFF",
-};
-
-// Platform data cell colors
-const PLATFORM_DATA_FILL: Record<PlatformType, string> = {
-  talabat: "FFFCE5CD",
-  keeta: "FFFFF2CC",
-  noon: "FFC9DAF8",
-  careem: "FFD9EAD3",
-  deliveroo: "FFD0E0E3",
-  smiles: "FFF4CCCC",
-};
-
-// ─── KPI rows config ──────────────────────────────────────────────────────────
-
-interface KPIRowConfig {
-  ar: string;
-  en: string;
-  key: keyof KPIResult;
-  format: "number" | "currency";
-  percentFormula?: (totalCol: string, baseCol: string) => string;
-}
-
-const KPI_ROWS: KPIRowConfig[] = [
-  {
-    ar: "اجمالي الطلبات",
-    en: "Total Orders",
-    key: "numOrders",
-    format: "number",
-    percentFormula: () => "1",
-  },
-  {
-    ar: "اجمالي المبيعات",
-    en: "Total Sales",
-    key: "totalSales",
-    format: "currency",
-    percentFormula: () => "1",
-  },
-  {
-    ar: "الخصم",
-    en: "Discount",
-    key: "discount",
-    format: "currency",
-    percentFormula: (t, b) => `=${t}/${b}`,
-  },
-  {
-    ar: "المبلغ المحتسب منه العموله",
-    en: "Earnings",
-    key: "earnings",
-    format: "currency",
-    percentFormula: (t, b) => `=${t}/${b}`,
-  },
-  {
-    ar: "سعر المطعم",
-    en: "Actual Sales",
-    key: "actualSales",
-    format: "currency",
-    percentFormula: (t, b) => `=${t}/${b}`,
-  },
-  {
-    ar: "المصروفات",
-    en: "Expenses",
-    key: "expenses",
-    format: "currency",
-    percentFormula: (t, b) => `=${t}/${b}`,
-  },
-  {
-    ar: "الارباح",
-    en: "Net Revenue",
-    key: "netRevenue",
-    format: "currency",
-    percentFormula: (t, b) => `=${t}/${b}`,
-  },
-  {
-    ar: "الفرق بين الربح وسعر المطعم الاصلي",
-    en: "Difference",
-    key: "difference",
-    format: "currency",
-    percentFormula: (t, b) => `=${t}/${b}`,
-  },
-  {
-    ar: "تكلفه الطعام",
-    en: "Food Cost",
-    key: "foodCost",
-    format: "currency",
-    percentFormula: (t, b) => `=${t}/${b}`,
-  },
-  {
-    ar: "الفرق بين الربح والتكلفه",
-    en: "Difference Food Cost",
-    key: "differenceCost",
-    format: "currency",
-    percentFormula: (t, b) => `=${t}/${b}`,
-  },
-];
-
-// ─── Helper functions ─────────────────────────────────────────────────────────
-
-function colLetter(index: number): string {
-  // 0-based index to Excel column letter (A=0, B=1, ...)
-  let result = "";
-  let n = index + 1;
-  while (n > 0) {
-    const rem = (n - 1) % 26;
-    result = String.fromCharCode(65 + rem) + result;
-    n = Math.floor((n - 1) / 26);
-  }
-  return result;
-}
-
-function fmt(value: number, format: "number" | "currency"): number {
-  return Math.round(value * 100) / 100;
-}
-
-function applyStyle(ws: XLSX.WorkSheet, cell: string, style: Partial<any>) {
-  if (!ws[cell]) ws[cell] = { v: "", t: "s" };
-  ws[cell].s = style;
-}
-
-// ─── Main export function ─────────────────────────────────────────────────────
-
-export interface ExportMasterSheetParams {
-  restaurantName: string;
+interface ExportData {
+  restaurant: Restaurant;
   dateFrom: string;
   dateTo: string;
   platformResults: PlatformKPIResult[];
   totalKPI: KPIResult;
 }
 
-export function exportMasterSheet({
-  restaurantName,
-  dateFrom,
-  dateTo,
-  platformResults,
-  totalKPI,
-}: ExportMasterSheetParams): void {
+// KPI Row labels (Arabic and English)
+const KPI_ROWS = [
+  { ar: 'اجمالي الطلبات', en: 'Total Orders', key: 'numOrders' },
+  { ar: 'اجمالي المبيعات', en: 'Total Sales', key: 'totalSales' },
+  { ar: 'الخصم', en: 'Discount', key: 'discount' },
+  { ar: 'المبلغ المحتسب منه العموله', en: 'Earnings', key: 'earnings' },
+  { ar: 'سعر المطعم', en: 'Actual Sales', key: 'actualSales' },
+  { ar: 'المصروفات', en: 'Expenses', key: 'expenses' },
+  { ar: 'الارباح', en: 'Net Revenue', key: 'netRevenue' },
+  { ar: 'الفرق بين الربح وسعر المطعم الاصلي', en: 'Difference', key: 'difference' },
+  { ar: 'تكلفه الطعام', en: 'Food Cost', key: 'foodCost' },
+  { ar: 'الفرق بين الربح والتكلفه', en: 'Difference Food Cost', key: 'differenceCost' },
+];
+
+// Platform order (matching HTML)
+const PLATFORM_ORDER = ['talabat', 'keeta', 'noon', 'careem', 'deliveroo', 'eateasily'];
+
+/**
+ * Create styled cell
+ */
+function styledCell(value: any, bgColor: string, textColor: string = '000000', bold: boolean = false, numFmt?: string): any {
+  return {
+    v: value,
+    s: {
+      fill: { fgColor: { rgb: bgColor } },
+      font: { bold, color: { rgb: textColor } },
+      alignment: { horizontal: 'center', vertical: 'center' },
+      border: {
+        top: { style: 'thin', color: { rgb: '999999' } },
+        bottom: { style: 'thin', color: { rgb: '999999' } },
+        left: { style: 'thin', color: { rgb: '999999' } },
+        right: { style: 'thin', color: { rgb: '999999' } },
+      },
+      ...(numFmt && { numFmt }),
+    },
+  };
+}
+
+/**
+ * Export analysis results to Excel Master Sheet
+ */
+export function exportMasterSheet(data: ExportData): void {
+  const { restaurant, dateFrom, dateTo, platformResults, totalKPI } = data;
+
+  // Create workbook
   const wb = XLSX.utils.book_new();
-  const wsData: (string | number)[][] = [];
 
-  // ── Row 1: Restaurant Name ──────────────────────────────────────────────────
+  // Get platforms in order
+  const orderedPlatforms = PLATFORM_ORDER.map(name => 
+    platformResults.find(p => p.platform === name)
+  ).filter(Boolean) as PlatformKPIResult[];
+
+  // ==========================================
+  // Build Master Sheet
+  // ==========================================
+  
+  const wsData: any[][] = [];
+
+  // Row 1: Restaurant Name
   wsData.push([
-    "Restaurant Name:",
-    restaurantName,
-    "",
-    "Period:",
-    "From:",
-    dateFrom,
-    "To:",
-    dateTo,
+    styledCell('Restaurant Name:', BRAND_COLORS.lightPurple, BRAND_COLORS.black, true),
+    styledCell(restaurant.name, BRAND_COLORS.darkPurple, BRAND_COLORS.white, true),
+    null, null, null, null, null, null, null, null,
   ]);
-  wsData.push([]); // empty row
 
-  // ── Which platforms are selected (in fixed order) ───────────────────────────
-  const selectedPlatforms = PLATFORM_ORDER.filter((p) =>
-    platformResults.some((r) => r.platform === p),
-  );
+  // Row 2: Period
+  wsData.push([
+    styledCell('Period:', BRAND_COLORS.lightPurple, BRAND_COLORS.black, true),
+    styledCell('From:', BRAND_COLORS.lightPurple, BRAND_COLORS.black, true),
+    styledCell(dateFrom, BRAND_COLORS.darkPurple, BRAND_COLORS.white, true),
+    styledCell('To:', BRAND_COLORS.lightPurple, BRAND_COLORS.black, true),
+    styledCell(dateTo, BRAND_COLORS.darkPurple, BRAND_COLORS.white, true),
+    null, null, null, null, null,
+  ]);
 
-  // Build result map for quick lookup
-  const resultMap = new Map<PlatformType, KPIResult>();
-  for (const r of platformResults) {
-    resultMap.set(r.platform, r.kpi);
-  }
+  // Empty row
+  wsData.push([]);
 
-  // ── Row 3: Headers ──────────────────────────────────────────────────────────
-  const headerRow: string[] = ["المنصات", "Aggregator"];
-  for (const p of selectedPlatforms) {
-    headerRow.push(PLATFORM_LABELS[p]);
-  }
-  headerRow.push("Total", "Percent");
+  // Header Row
+  const headerRow = [
+    styledCell('المنصات', BRAND_COLORS.purple, BRAND_COLORS.white, true), // Arabic label
+    styledCell('Aggregator', BRAND_COLORS.purple, BRAND_COLORS.white, true), // English label
+  ];
+
+  // Platform headers
+  PLATFORM_ORDER.forEach(platform => {
+    const color = PLATFORM_COLORS[platform as keyof typeof PLATFORM_COLORS];
+    headerRow.push(styledCell(platform.charAt(0).toUpperCase() + platform.slice(1), color.bg, color.text, true));
+  });
+
+  // Total and Percent headers
+  headerRow.push(styledCell('Total', BRAND_COLORS.purple, BRAND_COLORS.white, true));
+  headerRow.push(styledCell('Percent', BRAND_COLORS.purple, BRAND_COLORS.white, true));
+
   wsData.push(headerRow);
 
-  // ── Data rows ───────────────────────────────────────────────────────────────
-  // Row indices (1-based in Excel): headers at row 3, data starts at row 4
-  const HEADER_ROW = 3;
-  const DATA_START_ROW = 4;
-
-  // Column indices (0-based): 0=Arabic label, 1=English label, 2..=platforms, last-1=Total, last=Percent
-  const PLATFORM_COL_START = 2;
-  const TOTAL_COL = PLATFORM_COL_START + selectedPlatforms.length;
-  const PERCENT_COL = TOTAL_COL + 1;
-
-  for (let i = 0; i < KPI_ROWS.length; i++) {
-    const kpiRow = KPI_ROWS[i];
-    const excelRow = DATA_START_ROW + i;
-    const row: (string | number)[] = [kpiRow.ar, kpiRow.en];
-
-    // Platform values
-    for (const p of selectedPlatforms) {
-      const kpi = resultMap.get(p);
-      const val = kpi ? fmt(kpi[kpiRow.key] as number, kpiRow.format) : 0;
-      row.push(val);
-    }
-
-    // Total
-    const totalVal = fmt(totalKPI[kpiRow.key] as number, kpiRow.format);
-    row.push(totalVal);
-
-    // Percent formula
-    let percentVal: string | number = "";
-    if (kpiRow.percentFormula) {
-      const totalCellRef = `${colLetter(TOTAL_COL)}${excelRow}`;
-      const salesRowNum = DATA_START_ROW + 1; // Total Sales row (row index 1 = 2nd KPI row)
-      const salesCellRef = `${colLetter(TOTAL_COL)}${salesRowNum}`;
-      const actualSalesRowNum = DATA_START_ROW + 4; // Actual Sales row (index 4)
-      const actualSalesCellRef = `${colLetter(TOTAL_COL)}${actualSalesRowNum}`;
-
-      if (i === 0 || i === 1) {
-        percentVal = 1;
-      } else if (i === 7) {
-        // Difference: / actualSales
-        percentVal = `=${totalCellRef}/${actualSalesCellRef}`;
-      } else {
-        percentVal = `=${totalCellRef}/${colLetter(TOTAL_COL)}${salesRowNum}`;
-      }
-    }
-    row.push(percentVal);
-    wsData.push(row);
-  }
-
-  // ── Create worksheet ────────────────────────────────────────────────────────
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-  // ── Column widths ───────────────────────────────────────────────────────────
-  const colWidths = [
-    { wch: 35 }, // Arabic label
-    { wch: 22 }, // English label
-    ...selectedPlatforms.map(() => ({ wch: 14 })),
-    { wch: 14 }, // Total
-    { wch: 10 }, // Percent
-  ];
-  ws["!cols"] = colWidths;
-
-  // ── Styling ─────────────────────────────────────────────────────────────────
-  // Note: XLSX.utils styles require xlsx-js-style or SheetJS Pro for full support
-  // Using cell .s property which works with some renderers
-
-  const PURPLE = "FF674EA7";
-  const PINK_DARK = "FFA64D79";
-  const PINK_LIGHT = "FFEAD1DC";
-  const WHITE = "FFFFFFFF";
-  const BLACK = "FF000000";
-
-  const centerBold = (fill: string, fontColor = BLACK, fontSize = 11): any => ({
-    font: { bold: true, color: { rgb: fontColor }, sz: fontSize },
-    fill: { fgColor: { rgb: fill } },
-    alignment: { horizontal: "center", vertical: "center", wrapText: true },
-    border: {
-      top: { style: "thin", color: { rgb: "FF999999" } },
-      bottom: { style: "thin", color: { rgb: "FF999999" } },
-      left: { style: "thin", color: { rgb: "FF999999" } },
-      right: { style: "thin", color: { rgb: "FF999999" } },
-    },
-  });
-
-  // Style meta row (row 1)
-  const metaLabelStyle: any = {
-    font: { bold: true, sz: 11 },
-    fill: { fgColor: { rgb: PINK_LIGHT } },
-    border: {
-      top: { style: "thin" },
-      bottom: { style: "thin" },
-      left: { style: "thin" },
-      right: { style: "thin" },
-    },
-  };
-  const metaValueStyle: any = {
-    font: { bold: true, color: { rgb: WHITE }, sz: 11 },
-    fill: { fgColor: { rgb: PURPLE } },
-    alignment: { horizontal: "center" },
-    border: {
-      top: { style: "thin" },
-      bottom: { style: "thin" },
-      left: { style: "thin" },
-      right: { style: "thin" },
-    },
-  };
-
-  ["A1", "D1", "E1", "G1"].forEach((c) => applyStyle(ws, c, metaLabelStyle));
-  ["B1", "F1", "H1"].forEach((c) => applyStyle(ws, c, metaValueStyle));
-
-  // Style header row (row 3)
-  const headerRowNum = HEADER_ROW;
-  applyStyle(ws, `A${headerRowNum}`, centerBold(PINK_DARK, WHITE));
-  applyStyle(ws, `B${headerRowNum}`, centerBold(PINK_DARK, WHITE));
-
-  selectedPlatforms.forEach((p, i) => {
-    const col = colLetter(PLATFORM_COL_START + i);
-    applyStyle(
-      ws,
-      `${col}${headerRowNum}`,
-      centerBold(PLATFORM_HEADER_FILL[p], PLATFORM_HEADER_FONT[p]),
-    );
-  });
-
-  applyStyle(
-    ws,
-    `${colLetter(TOTAL_COL)}${headerRowNum}`,
-    centerBold(PINK_DARK, WHITE),
-  );
-  applyStyle(
-    ws,
-    `${colLetter(PERCENT_COL)}${headerRowNum}`,
-    centerBold(PINK_DARK, WHITE),
-  );
-
-  // Style data rows
-  for (let i = 0; i < KPI_ROWS.length; i++) {
-    const excelRow = DATA_START_ROW + i;
+  // KPI Data Rows
+  KPI_ROWS.forEach((rowDef, rowIndex) => {
+    const dataRow: any[] = [];
 
     // Arabic label
-    applyStyle(ws, `A${excelRow}`, {
-      font: { bold: true, sz: 10 },
-      fill: { fgColor: { rgb: PINK_LIGHT } },
-      alignment: { horizontal: "right", readingOrder: 2 },
-      border: {
-        top: { style: "thin", color: { rgb: "FFCCCCCC" } },
-        bottom: { style: "thin", color: { rgb: "FFCCCCCC" } },
-        left: { style: "thin", color: { rgb: "FFCCCCCC" } },
-        right: { style: "thin", color: { rgb: "FFCCCCCC" } },
+    dataRow.push({
+      v: rowDef.ar,
+      s: {
+        fill: { fgColor: { rgb: BRAND_COLORS.lightPurple } },
+        font: { bold: true },
+        alignment: { horizontal: 'right' },
+        border: {
+          top: { style: 'thin', color: { rgb: '999999' } },
+          bottom: { style: 'thin', color: { rgb: '999999' } },
+          left: { style: 'thin', color: { rgb: '999999' } },
+          right: { style: 'thin', color: { rgb: '999999' } },
+        },
       },
     });
 
     // English label
-    applyStyle(ws, `B${excelRow}`, {
-      font: { bold: true, sz: 10 },
-      fill: { fgColor: { rgb: PINK_LIGHT } },
-      alignment: { horizontal: "left" },
-      border: {
-        top: { style: "thin", color: { rgb: "FFCCCCCC" } },
-        bottom: { style: "thin", color: { rgb: "FFCCCCCC" } },
-        left: { style: "thin", color: { rgb: "FFCCCCCC" } },
-        right: { style: "thin", color: { rgb: "FFCCCCCC" } },
+    dataRow.push({
+      v: rowDef.en,
+      s: {
+        fill: { fgColor: { rgb: BRAND_COLORS.lightPurple } },
+        font: { bold: true },
+        alignment: { horizontal: 'left' },
+        border: {
+          top: { style: 'thin', color: { rgb: '999999' } },
+          bottom: { style: 'thin', color: { rgb: '999999' } },
+          left: { style: 'thin', color: { rgb: '999999' } },
+          right: { style: 'thin', color: { rgb: '999999' } },
+        },
       },
     });
 
-    // Platform cells
-    selectedPlatforms.forEach((p, pi) => {
-      const col = colLetter(PLATFORM_COL_START + pi);
-      applyStyle(ws, `${col}${excelRow}`, centerBold(PLATFORM_DATA_FILL[p]));
+    // Platform values
+    PLATFORM_ORDER.forEach(platform => {
+      const platformData = orderedPlatforms.find(p => p.platform === platform);
+      const value = platformData ? (platformData.kpi as any)[rowDef.key] : 0;
+      const color = PLATFORM_COLORS[platform as keyof typeof PLATFORM_COLORS];
+      
+      const isNumber = typeof value === 'number';
+      dataRow.push(styledCell(
+        isNumber ? value : value || 0,
+        color.bg,
+        color.text,
+        true,
+        isNumber ? '#,##0.00' : undefined
+      ));
     });
 
-    // Total cell
-    applyStyle(
-      ws,
-      `${colLetter(TOTAL_COL)}${excelRow}`,
-      centerBold(PINK_LIGHT),
-    );
+    // Total value
+    const totalValue = (totalKPI as any)[rowDef.key];
+    dataRow.push(styledCell(
+      totalValue,
+      BRAND_COLORS.lightPurple,
+      BRAND_COLORS.black,
+      true,
+      '#,##0.00'
+    ));
 
-    // Percent cell
-    applyStyle(
-      ws,
-      `${colLetter(PERCENT_COL)}${excelRow}`,
-      centerBold(PURPLE, WHITE),
-    );
-  }
+    // Percent (formula placeholder)
+    const percentValue = rowIndex === 0 ? 1 : `=(K${rowIndex + 6}/K5)`;
+    dataRow.push(styledCell(
+      percentValue,
+      BRAND_COLORS.darkPurple,
+      BRAND_COLORS.white,
+      true
+    ));
 
-  // ── Number format ───────────────────────────────────────────────────────────
-  const currencyFmt = "#,##0.00";
-  const pctFmt = "0.00%";
+    wsData.push(dataRow);
+  });
 
-  for (let i = 0; i < KPI_ROWS.length; i++) {
-    const kpiRow = KPI_ROWS[i];
-    const excelRow = DATA_START_ROW + i;
-    const isNum = kpiRow.format === "number";
+  // Create worksheet
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-    for (let ci = PLATFORM_COL_START; ci <= TOTAL_COL; ci++) {
-      const cellRef = `${colLetter(ci)}${excelRow}`;
-      if (ws[cellRef]) {
-        ws[cellRef].z = isNum ? "0" : currencyFmt;
-      }
-    }
+  // Set column widths
+  ws['!cols'] = [
+    { wch: 25 }, // Arabic label
+    { wch: 20 }, // English label
+    { wch: 12 }, // Talabat
+    { wch: 12 }, // Keeta
+    { wch: 12 }, // Noon
+    { wch: 12 }, // Careem
+    { wch: 12 }, // Deliveroo
+    { wch: 12 }, // Eateasily
+    { wch: 15 }, // Total
+    { wch: 12 }, // Percent
+  ];
 
-    // Percent column (skip rows 1 & 2 which are hardcoded 1)
-    const pctRef = `${colLetter(PERCENT_COL)}${excelRow}`;
-    if (ws[pctRef] && i >= 2) {
-      ws[pctRef].z = pctFmt;
-    }
-  }
+  // Set row heights
+  ws['!rows'] = [
+    { hpt: 25 },
+    { hpt: 25 },
+    { hpt: 15 }, // Empty
+    { hpt: 30 }, // Header
+    ...KPI_ROWS.map(() => ({ hpt: 25 })),
+  ];
 
-  // ── Add sheet & save ────────────────────────────────────────────────────────
-  XLSX.utils.book_append_sheet(wb, ws, "Master Sheet");
+  XLSX.utils.book_append_sheet(wb, ws, 'Master Sheet');
 
-  const filename = `UGROW_MasterSheet_${restaurantName.replace(/\s+/g, "_")}_${dateFrom}_${dateTo}.xlsx`;
-  XLSX.writeFile(wb, filename);
+  // ==========================================
+  // Generate File Name & Download
+  // ==========================================
+  const safeName = restaurant.name.replace(/[^a-zA-Z0-9]/g, '_');
+  const fileName = `UGROW_MasterSheet_${safeName}_${dateFrom}_${dateTo}.xlsx`;
+  
+  XLSX.writeFile(wb, fileName);
 }
+
+/**
+ * Simple export for testing
+ */
+export function exportPlatformKPI(
+  platform: string,
+  kpi: KPIResult,
+  fileName?: string
+): void {
+  const data = [
+    ['Platform', platform.toUpperCase()],
+    [''],
+    ['Metric', 'Value (AED)'],
+    ['Number of Orders', kpi.numOrders],
+    ['Total Sales', kpi.totalSales],
+    ['Discount', kpi.discount],
+    ['Earnings', kpi.earnings],
+    ['Actual Sales', kpi.actualSales],
+    ['Net Revenue', kpi.netRevenue],
+    ['Expenses', kpi.expenses],
+    ['Difference', kpi.difference],
+    ['Food Cost', kpi.foodCost],
+    ['Difference Cost', kpi.differenceCost],
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'KPI Results');
+
+  const finalFileName = fileName || `KPI_${platform}_${new Date().toISOString().split('T')[0]}.xlsx`;
+  XLSX.writeFile(wb, finalFileName);
+}
+
+export default exportMasterSheet;

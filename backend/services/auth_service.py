@@ -153,86 +153,12 @@ class AuthService:
                 return None, "Your restaurant account has been deactivated. Please contact UGROW."
         
         return user, None
-
-    def get_current_user(self, token: str) -> Optional[User]:
-        """Get user from access token"""
-        payload = self.decode_token(token)
-        if not payload or payload.get("type") != "access":
-            return None
-        
-        user_id = payload.get("sub")
-        try:
-            return self.db.query(User).filter(User.id == uuid.UUID(user_id)).first()
-        except ValueError:
-            return None
-
-    # ============================================
-    # Credential Encryption (AES-256)
-    # ============================================
-
-    @staticmethod
-    def encrypt_credential(plain_text: str) -> str:
-        """Encrypt platform credential using AES-256 (Fernet)"""
-        encrypted = cipher_suite.encrypt(plain_text.encode())
-        return encrypted.decode()
-
-    @staticmethod
-    def decrypt_credential(encrypted_text: str) -> str:
-        """Decrypt platform credential"""
-        decrypted = cipher_suite.decrypt(encrypted_text.encode())
-        return decrypted.decode()
-
-    # ============================================
-    # User Management
-    # ============================================
-
-    def create_user(
-        self,
-        username: str,
-        email: str,
-        password: str,
-        role: UserRole,
-        restaurant_id: Optional[uuid.UUID] = None
-    ) -> User:
-        """Create new user"""
-        # Auto-append @ugrow.com if not present
-        if not email.endswith("@ugrow.com"):
-            email = f"{email}@ugrow.com"
-        
-        user = User(
-            id=uuid.uuid4(),
-            username=username,
-            email=email,
-            password_hash=self.hash_password(password),
-            role=role,
-            restaurant_id=restaurant_id,
-            status=UserStatus.ACTIVE
-        )
-        self.db.add(user)
-        self.db.commit()
-        self.db.refresh(user)
-        return user
-
-    def change_password(self, user_id: uuid.UUID, new_password: str) -> bool:
-        """Change user password"""
-        user = self.db.query(User).filter(User.id == user_id).first()
-        if not user:
-            return False
-        
-        user.password_hash = self.hash_password(new_password)
-        self.db.commit()
-        return True
-
-
-# ============================================
-# FastAPI Dependencies
-# ============================================
+    # Import here to avoid circular dependency
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 security = HTTPBearer()
-
 
 async def get_current_user_dependency(
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -245,22 +171,21 @@ async def get_current_user_dependency(
     token = credentials.credentials
     auth_service = AuthService(db)
     user = auth_service.get_current_user(token)
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is not active"
         )
-    
-    return user
 
+    return user
 
 async def get_current_admin(
     user: User = Depends(get_current_user_dependency)
@@ -274,6 +199,3 @@ async def get_current_admin(
             detail="Admin access required"
         )
     return user
-
-
-# Import here to avoid circular dependency

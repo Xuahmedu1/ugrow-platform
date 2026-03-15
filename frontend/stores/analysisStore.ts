@@ -11,6 +11,7 @@ interface AnalysisState {
   // Wizard state
   step: number;
   selectedRestaurant: Restaurant | null;
+  
   dateFrom: string;
   dateTo: string;
   selectedPlatforms: PlatformType[];
@@ -80,7 +81,6 @@ export const useAnalysisStore = create<AnalysisState>()((set, get) => ({
   setSelectedRestaurant: (restaurant) =>
     set({
       selectedRestaurant: restaurant,
-      // Reset platforms when restaurant changes
       selectedPlatforms: [],
       uploadedFiles: {
         talabat: [],
@@ -103,7 +103,6 @@ export const useAnalysisStore = create<AnalysisState>()((set, get) => ({
   togglePlatform: (platform) => {
     const { selectedPlatforms, uploadedFiles } = get();
     if (selectedPlatforms.includes(platform)) {
-      // Remove platform and its files
       const newFiles = { ...uploadedFiles };
       delete newFiles[platform];
       set({

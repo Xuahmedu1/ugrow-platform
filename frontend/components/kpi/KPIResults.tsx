@@ -4,8 +4,10 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { useAnalysisStore } from '@/stores/analysisStore'
+import { useRestaurantStore } from '@/stores/restaurantStore'
 import { PLATFORMS, type KPIResult, type PlatformKPIResult } from '@/lib/types'
 import { KPI_CONFIG, type KPIKey } from '@/lib/kpiCalculations'
+import { exportMasterSheet } from '@/lib/exportMasterSheet'
 import { KPICard } from './KPICard'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -24,13 +26,9 @@ const KPI_ORDER: KPIKey[] = [
   'differenceCost'
 ]
 
-// أضيف ده فوق الـ component — interface للـ props
 interface KPIResultsProps {
-  // لو اتبعتلها props تستخدمهم (admin reports view)
-  // لو لأ تجيب من الـ store (analysis page)
   results?: PlatformKPIResult[]
   totalKPI?: KPIResult | null
-  // لما بيجي من reports page مش محتاج export/save
   readOnly?: boolean
 }
 
@@ -40,12 +38,11 @@ export function KPIResults({
   readOnly = false
 }: KPIResultsProps = {}) {
   const store = useAnalysisStore()
+  const { selectedRestaurant } = useRestaurantStore()
   const [activeTab, setActiveTab] = useState<string>('total')
 
-  // استخدم الـ props لو موجودين، لو لأ من الـ store
   const results = propResults ?? store.results
   const totalKPI = propTotalKPI ?? store.totalKPI
-  const selectedRestaurant = store.selectedRestaurant
   const dateFrom = store.dateFrom
   const dateTo = store.dateTo
   const settings = store.settings
@@ -62,56 +59,54 @@ export function KPIResults({
 
   const currentKPIs = getCurrentKPIs()
 
-  const handleExport = async () => {
-    if (!totalKPI) return
-    try {
-      const response = await fetch('http://localhost:8000/api/export/master-sheet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          restaurantName: selectedRestaurant?.name ?? 'Restaurant',
-          dateFrom,
-          dateTo,
-          platformResults: results,
-          totalKPI,
-        }),
-      })
-
-      if (!response.ok) throw new Error('Export failed')
-
-      const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `MasterSheet_${dateFrom}_${dateTo}.xlsx`
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch (err) {
-      console.error('Export error:', err)
+  // ✅ EXPORT محلي بدون API
+  const handleExport = () => {
+    if (!totalKPI) {
+      alert('No data to export')
+      return
     }
+
+    if (!selectedRestaurant) {
+      alert('Please select a restaurant first')
+      return
+    }
+
+    // Export locally using XLSX
+    exportMasterSheet({
+      restaurant: selectedRestaurant,
+      dateFrom: dateFrom || new Date().toISOString().split('T')[0],
+      dateTo: dateTo || new Date().toISOString().split('T')[0],
+      platformResults: results,
+      totalKPI
+    })
   }
 
+  // ✅ SAVE REPORT (لسه بيكلم API - ممكن نعمله محلي بعدين)
   const handleSaveReport = async () => {
     if (!totalKPI) return
+    
     try {
-      const response = await fetch('http://localhost:8000/api/reports/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          restaurantId: selectedRestaurant?.id ?? '1',
-          restaurantName: selectedRestaurant?.name ?? 'Restaurant',
-          dateFrom,
-          dateTo,
-          platforms: results.map(r => r.platform),
-          results,
-          totalKPI,
-          settings,
-          createdBy: 'admin@ugrow.com',
-        }),
-      })
-      if (response.ok) {
-        alert('Report saved successfully! ✓')
+      // مؤقتًا: نحفظ في localStorage بدل API
+      const reportData = {
+        id: Date.now().toString(),
+        restaurantId: selectedRestaurant?.id ?? '1',
+        restaurantName: selectedRestaurant?.name ?? 'Restaurant',
+        dateFrom,
+        dateTo,
+        platforms: results.map(r => r.platform),
+        results,
+        totalKPI,
+        settings,
+        createdBy: 'admin@ugrow.com',
+        createdAt: new Date().toISOString()
       }
+
+      // Get existing reports
+      const existingReports = JSON.parse(localStorage.getItem('ugrow_reports') || '[]')
+      existingReports.push(reportData)
+      localStorage.setItem('ugrow_reports', JSON.stringify(existingReports))
+
+      alert('Report saved successfully! ✓')
     } catch {
       alert('Failed to save report')
     }
