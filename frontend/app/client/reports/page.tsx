@@ -408,7 +408,7 @@ export default function ClientReportsPage() {
                   <div className="absolute right-0 top-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
                   <div className="absolute left-1/4 bottom-0 w-64 h-64 bg-[#FF305D]/10 rounded-full translate-y-1/2" />
 
-                  <div className="relative z-10 max-w-[1600px] mx-auto">
+                  <div className="relative z-10 max-w-400 mx-auto">
                     <div className="flex items-start justify-between gap-6">
                       <div>
                         <motion.div
@@ -540,7 +540,7 @@ export default function ClientReportsPage() {
                 </motion.div>
 
                 <div className="flex-1 overflow-y-auto">
-                  <div className="max-w-[1600px] mx-auto px-8 py-10">
+                  <div className="max-w-400 mx-auto px-8 py-10">
                     <AnimatePresence mode="wait">
                       {activeTab === 'total' ? (
                         <motion.div
