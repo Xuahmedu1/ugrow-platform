@@ -166,7 +166,7 @@ export function LoginPage() {
           className="mt-6 pt-6 border-t border-gray-100"
         >
           <p className="text-xs text-gray-400 text-center">
-            Demo: admin / admin123
+            Demo: admin / ugrow1@@
           </p>
         </motion.div>
       </motion.div>

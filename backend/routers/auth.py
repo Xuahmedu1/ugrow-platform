@@ -1,45 +1,72 @@
-from fastapi import APIRouter, HTTPException # type: ignore
-from pydantic import BaseModel # type: ignore
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 from datetime import datetime, timedelta
-from jose import jwt # type: ignore
+from jose import jwt
 import hashlib
 
 router = APIRouter()
 
-# ── Config ────────────────────────────────────────────────────────────────────
+# ── Config ──────────────────────────────────────────────────────
 SECRET_KEY         = "ugrow-secret-key-change-in-production"
 ALGORITHM          = "HS256"
 TOKEN_EXPIRE_HOURS = 24
 
-# ── Simple password hashing (SHA256 — replace with bcrypt in production) ─────
+# ── Password hashing ────────────────────────────────────────────
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
 def verify_password(plain: str, hashed: str) -> bool:
     return hash_password(plain) == hashed
 
-# ── Mock users ────────────────────────────────────────────────────────────────
+# ── Mock users ──────────────────────────────────────────────────
 MOCK_USERS = {
     "admin@ugrow.com": {
-        "id": "1",
+        "id": "admin-1",
         "email": "admin@ugrow.com",
-        "name": "Admin",
+        "name": "UGROW Admin",
         "role": "admin",
         "status": "active",
-        "hashed_password": hash_password("admin123"),
+        "hashed_password": hash_password("ugrow1@@"),
     },
-    "client@ugrow.com": {
-        "id": "2",
-        "email": "client@ugrow.com",
-        "name": "Client",
+    "sharea@ugrow.com": {
+        "id": "client-rest-1",
+        "email": "sharea@ugrow.com",
+        "name": "Sharea Alkebda",
         "role": "client",
         "status": "active",
-        "restaurantId": "1",
-        "hashed_password": hash_password("client123"),
+        "restaurantId": "rest-1",
+        "hashed_password": hash_password("sharea123"),
+    },
+    "bites@ugrow.com": {
+        "id": "client-rest-2",
+        "email": "bites@ugrow.com",
+        "name": "Bites Kitchen",
+        "role": "client",
+        "status": "active",
+        "restaurantId": "rest-2",
+        "hashed_password": hash_password("bites123"),
+    },
+    "gulf@ugrow.com": {
+        "id": "client-rest-3",
+        "email": "gulf@ugrow.com",
+        "name": "Gulf Shawarma",
+        "role": "client",
+        "status": "hold",
+        "restaurantId": "rest-3",
+        "hashed_password": hash_password("gulf123"),
+    },
+    "bahar@ugrow.com": {
+        "id": "client-rest-4",
+        "email": "bahar@ugrow.com",
+        "name": "Al Bahar Grills",
+        "role": "client",
+        "status": "deactivated",
+        "restaurantId": "rest-4",
+        "hashed_password": hash_password("bahar123"),
     },
 }
 
-# ── Schemas ───────────────────────────────────────────────────────────────────
+# ── Schemas ──────────────────────────────────────────────────────
 class LoginRequest(BaseModel):
     email: str
     password: str
@@ -49,13 +76,13 @@ class LoginResponse(BaseModel):
     token_type: str
     user: dict
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# ── Helpers ──────────────────────────────────────────────────────
 def create_token(data: dict) -> str:
     payload = data.copy()
     payload["exp"] = datetime.utcnow() + timedelta(hours=TOKEN_EXPIRE_HOURS)
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
-# ── Routes ────────────────────────────────────────────────────────────────────
+# ── Routes ───────────────────────────────────────────────────────
 @router.post("/login", response_model=LoginResponse)
 def login(body: LoginRequest):
     user = MOCK_USERS.get(body.email)

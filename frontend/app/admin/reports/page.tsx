@@ -278,7 +278,7 @@ function DeleteConfirmDialog({
   )
 }
 
-// View Report Modal
+// ViewReportModal — صلّح استخدام KPIResults
 function ViewReportModal({
   open,
   onOpenChange,
@@ -300,7 +300,7 @@ function ViewReportModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="border-b border-gray-100 pb-4">
           <div className="flex items-center justify-between">
             <div>
@@ -312,7 +312,7 @@ function ViewReportModal({
                 {formatDate(report.dateFrom)} — {formatDate(report.dateTo)}
               </DialogDescription>
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-2 items-center">
               {report.platforms.map((platform) => (
                 <Image
                   key={platform}
@@ -320,17 +320,19 @@ function ViewReportModal({
                   alt={PLATFORMS[platform].name}
                   width={28}
                   height={28}
-                  className="object-contain"
+                  className="object-contain rounded"
                 />
               ))}
             </div>
           </div>
         </DialogHeader>
-        
+
         <div className="py-4">
-          <KPIResults 
-            results={report.results} 
+          {/* ✅ بنبعت results و totalKPI كـ props + readOnly=true */}
+          <KPIResults
+            results={report.results}
             totalKPI={report.totalKPI}
+            readOnly={true}
           />
         </div>
       </DialogContent>

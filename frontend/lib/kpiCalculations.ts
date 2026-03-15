@@ -40,7 +40,7 @@ export function calculateKPIs(
   const { actualSalesRate, foodCostRate } = settings
 
   const earnings = totalSales - discount
-  const actualSales = totalSales * (actualSalesRate / 100)
+  const actualSales = totalSales / (1 + actualSalesRate / 100)
   const expenses = earnings - netRevenue
   const difference = netRevenue - actualSales
   const foodCost = actualSales * (foodCostRate / 100)
