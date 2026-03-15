@@ -1,176 +1,258 @@
-from openpyxl import Workbook # type: ignore
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side # type: ignore
-from openpyxl.utils import get_column_letter # type: ignore
-from typing import List, Dict, Any
-import io
+"""
+UGROW Excel Export Service
+Master Sheet generation with placeholder replacement
+SRS Section 11 - Master Sheet Export
+"""
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+import os
+import re
+import shutil
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, Any, List
 
-def hex_fill(hex6: str) -> PatternFill:
-    return PatternFill("solid", fgColor="FF" + hex6.upper())
+try:
+    from openpyxl import load_workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    EXCEL_AVAILABLE = True
+except ImportError:
+    EXCEL_AVAILABLE = False
+    print("WARNING: openpyxl not installed. Excel export functionality disabled.")
 
-def thin_border() -> Border:
-    s = Side(style="thin", color="999999")
-    return Border(left=s, right=s, top=s, bottom=s)
 
-def sc(cell, fill6: str, font6: str = "000000", bold: bool = True, align: str = "center"):
-    cell.fill = hex_fill(fill6)
-    cell.font = Font(bold=bold, color="FF" + font6.upper(), name="Arial", size=10)
-    cell.alignment = Alignment(horizontal=align, vertical="center", wrap_text=False)
-    cell.border = thin_border()
-
-# ── Platform config ───────────────────────────────────────────────────────────
-
-PLATFORM_ORDER  = ["talabat", "keeta", "noon", "careem", "deliveroo", "smiles"]
-PLATFORM_LABELS = {"talabat": "Talabat", "keeta": "Keeta", "noon": "Noon",
-                   "careem": "Careem", "deliveroo": "Deliveroo", "smiles": "Smiles"}
-
-PH_FILL = {"talabat": "FF9900", "keeta": "FBBC04", "noon": "4285F4",
-           "careem": "34A853", "deliveroo": "46BDC6", "smiles": "EA4335"}
-PH_FONT = {"talabat": "000000", "keeta": "000000", "noon": "FFFFFF",
-           "careem": "FFFFFF", "deliveroo": "FFFFFF", "smiles": "FFFFFF"}
-PD_FILL = {"talabat": "FCE5CD", "keeta": "FFF2CC", "noon": "C9DAF8",
-           "careem": "D9EAD3", "deliveroo": "D0E0E3", "smiles": "F4CCCC"}
-
-# ── KPI rows ──────────────────────────────────────────────────────────────────
-
-KPI_ROWS = [
-    ("اجمالي الطلبات",                     "Total Orders",         "numOrders",      "number"),
-    ("اجمالي المبيعات",                    "Total Sales",          "totalSales",     "currency"),
-    ("الخصم",                               "Discount",             "discount",       "currency"),
-    ("المبلغ المحتسب منه العموله",          "Earnings",             "earnings",       "currency"),
-    ("سعر المطعم",                          "Actual sales",         "actualSales",    "currency"),
-    ("المصروفات",                           "Expenses",             "expenses",       "currency"),
-    ("الارباح",                             "Net Revenue",          "netRevenue",     "currency"),
-    ("الفرق بين الربح وسعر المطعم الاصلي", "Deffirence",           "difference",     "currency"),
-    ("تكلفه الطعام",                        "Food Cost",            "foodCost",       "currency"),
-    ("الفرق بين الربح والتكلفه",            "Deffirence Food Cost", "differenceCost", "currency"),
-]
-
-PCT_FORMULAS = [
-    "1", "1",
-    "=(J7/J6)", "=(J8/J6)", "=(J9/J6)", "=(J10/J6)",
-    "=(K6+K12)", "=(J12/J11)", "=(J13/J11)", "=(J14/J9)",
-]
-
-# ── Main function ─────────────────────────────────────────────────────────────
-
-def generate_master_sheet(
-    restaurant_name: str,
-    date_from: str,
-    date_to: str,
-    platform_results: List[Dict],
-    total_kpi: Dict,
-) -> bytes:
-
-    selected    = [p for p in PLATFORM_ORDER if any(r["platform"] == p for r in platform_results)]
-    result_map  = {r["platform"]: r["kpi"] for r in platform_results}
-
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Sheet1"
-
-    # ── Column widths ─────────────────────────────────────────────────────────
-    for col, w in [("A", 0.38), ("B", 24), ("C", 19.5), ("D", 13.75), ("E", 13.75),
-                   ("F", 13.75), ("G", 13.75), ("H", 13.75), ("I", 13.75),
-                   ("J", 18), ("K", 13), ("L", 0.38)]:
-        ws.column_dimensions[col].width = w
-
-    ws.row_dimensions[1].height = 1.5
-
-    # ── Row 2: Restaurant Name ─────────────────────────────────────────────────
-    ws.row_dimensions[2].height = 20
-    ws["D2"] = "Restaurant Name:"
-    sc(ws["D2"], "EAD1DC")
-    ws.merge_cells("D2:E2")
-
-    ws["F2"] = restaurant_name
-    sc(ws["F2"], "674EA7", "FFFFFF")
-    ws.merge_cells("F2:I2")
-
-    ws.merge_cells("J2:K3")
-    sc(ws["J2"], "A64D79", "000000", False, "left")
-
-    # ── Row 3: Period ─────────────────────────────────────────────────────────
-    ws.row_dimensions[3].height = 20
-    ws["D3"] = "Period:"
-    sc(ws["D3"], "EAD1DC")
-    ws.merge_cells("D3:E3")
-
-    ws["F3"] = "From:"
-    sc(ws["F3"], "EAD1DC")
-
-    ws["G3"] = date_from
-    sc(ws["G3"], "674EA7", "FFFFFF")
-
-    ws["H3"] = "To:"
-    sc(ws["H3"], "EAD1DC")
-
-    ws["I3"] = date_to
-    sc(ws["I3"], "674EA7", "FFFFFF")
-
-    # ── Row 4: Platform headers ───────────────────────────────────────────────
-    ws.row_dimensions[4].height = 20
-    ws["B4"] = "المنصات"
-    sc(ws["B4"], "A64D79", "FFFFFF", True, "right")
-
-    ws["C4"] = "Aggregator"
-    sc(ws["C4"], "A64D79", "FFFFFF")
-
-    platform_cols = {}
-    for i, p in enumerate(selected):
-        col = get_column_letter(4 + i)
-        platform_cols[p] = col
-        ws[f"{col}4"] = PLATFORM_LABELS[p]
-        sc(ws[f"{col}4"], PH_FILL[p], PH_FONT[p])
-
-    total_col = get_column_letter(4 + len(selected))
-    pct_col   = get_column_letter(4 + len(selected) + 1)
-
-    ws[f"{total_col}4"] = "Total"
-    sc(ws[f"{total_col}4"], "A64D79", "FFFFFF")
-
-    ws[f"{pct_col}4"] = "Percent"
-    sc(ws[f"{pct_col}4"], "A64D79", "FFFFFF")
-
-    # ── Data rows 5-14 ────────────────────────────────────────────────────────
-    for row_i, (ar, en, key, fmt) in enumerate(KPI_ROWS):
-        r = 5 + row_i
-        ws.row_dimensions[r].height = 20
-
-        ws[f"B{r}"] = ar
-        sc(ws[f"B{r}"], "EAD1DC", "000000", True, "right")
-
-        ws[f"C{r}"] = en
-        sc(ws[f"C{r}"], "EAD1DC", "000000", True, "left")
-
-        for p in selected:
-            col = platform_cols[p]
-            val = round(result_map.get(p, {}).get(key, 0), 2)
-            ws[f"{col}{r}"] = val
-            sc(ws[f"{col}{r}"], PD_FILL[p])
-            ws[f"{col}{r}"].number_format = "#,##0.00" if fmt == "currency" else "#,##0"
-
-        total_val = round(total_kpi.get(key, 0), 2)
-        ws[f"{total_col}{r}"] = total_val
-        sc(ws[f"{total_col}{r}"], "EAD1DC")
-        ws[f"{total_col}{r}"].number_format = "#,##0.00" if fmt == "currency" else "#,##0"
-
-        pct = PCT_FORMULAS[row_i]
-        if pct == "1":
-            ws[f"{pct_col}{r}"] = 1.0
-            ws[f"{pct_col}{r}"].number_format = "0.00%"
-        else:
-            ws[f"{pct_col}{r}"] = pct
-            ws[f"{pct_col}{r}"].number_format = "0.0%"
-        sc(ws[f"{pct_col}{r}"], "674EA7", "FFFFFF")
-
-    # ── Merge spacer ──────────────────────────────────────────────────────────
-    ws.merge_cells("B1:C3")
-    ws["B1"].fill = hex_fill("A64D79")
-
-    # ── Return as bytes ───────────────────────────────────────────────────────
-    buffer = io.BytesIO()
-    wb.save(buffer)
-    buffer.seek(0)
-    return buffer.read()
+class ExcelExportService:
+    """
+    Handles Excel Master Sheet generation
+    Preserves template formatting, replaces only cell values
+    """
+    
+    def __init__(self):
+        if not EXCEL_AVAILABLE:
+            raise ImportError("openpyxl is required for Excel export. Run: pip install openpyxl")
+        
+        self.template_path = Path(os.getenv(
+            "MASTER_SHEET_TEMPLATE_PATH",
+            "./templates/Master_Sheet.xlsx"
+        ))
+        self.output_dir = Path(os.getenv(
+            "EXPORTS_OUTPUT_PATH",
+            "./exports"
+        ))
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+    
+    def generate_master_sheet(
+        self,
+        restaurant_name: str,
+        date_from: str,
+        date_to: str,
+        platform_results: List[Dict[str, Any]],
+        total_kpi: Dict[str, float]
+    ) -> str:
+        """
+        Generate Master Sheet Excel file with KPI data
+        
+        Args:
+            restaurant_name: Name of the restaurant
+            date_from: Start date (YYYY-MM-DD)
+            date_to: End date (YYYY-MM-DD)
+            platform_results: List of {platform, kpi} dicts
+            total_kpi: Aggregated KPI totals
+        
+        Returns:
+            Path to generated Excel file
+        """
+        if not EXCEL_AVAILABLE:
+            raise ImportError("openpyxl is required for Excel export")
+        
+        # Validate template exists
+        if not self.template_path.exists():
+            raise FileNotFoundError(f"Master Sheet template not found: {self.template_path}")
+        
+        # Load template (preserve formatting)
+        wb = load_workbook(self.template_path, data_only=False)
+        ws = wb.active
+        
+        # Replace basic placeholders
+        ws = self._replace_basic_placeholders(ws, restaurant_name, date_from, date_to)
+        
+        # Replace platform KPI placeholders
+        ws = self._replace_platform_kpis(ws, platform_results)
+        
+        # Replace total KPI placeholders
+        ws = self._replace_total_kpis(ws, total_kpi)
+        
+        # Generate output filename
+        safe_name = self._sanitize_filename(restaurant_name)
+        safe_from = date_from.replace('/', '-')
+        safe_to = date_to.replace('/', '-')
+        output_filename = f"{safe_name}_{safe_from}_{safe_to}.xlsx"
+        output_path = self.output_dir / output_filename
+        
+        # Save
+        wb.save(output_path)
+        
+        return str(output_path)
+    
+    def _replace_basic_placeholders(
+        self,
+        ws,
+        restaurant_name: str,
+        date_from: str,
+        date_to: str
+    ):
+        """Replace basic info placeholders"""
+        # Convert dates to DD/MM/YYYY format
+        from_date_formatted = self._format_date(date_from)
+        to_date_formatted = self._format_date(date_to)
+        
+        placeholders = {
+            'r_name': restaurant_name,
+            'f_date': from_date_formatted,
+            't_date': to_date_formatted,
+        }
+        
+        for row in ws.iter_rows():
+            for cell in row:
+                if cell.value and isinstance(cell.value, str):
+                    for placeholder, value in placeholders.items():
+                        if placeholder in cell.value:
+                            cell.value = cell.value.replace(placeholder, str(value))
+        
+        return ws
+    
+    def _replace_platform_kpis(self, ws, platform_results: List[Dict[str, Any]]):
+        """
+        Replace platform-specific KPI placeholders
+        
+        Platform mapping:
+        1: Talabat
+        2: Keeta
+        3: Noon
+        4: Careem
+        5: Deliveroo
+        6: Smiles (Eateasily)
+        """
+        # Map platform names to numbers
+        platform_map = {
+            'talabat': 1,
+            'keeta': 2,
+            'noon': 3,
+            'careem': 4,
+            'deliveroo': 5,
+            'smiles': 6,
+        }
+        
+        # KPI field to placeholder suffix mapping
+        kpi_fields = {
+            'numOrders': 'num_orders',
+            'totalSales': 'total_sales',
+            'discount': 'discount',
+            'earnings': 'earnings',
+            'actualSales': 'actual_sales',
+            'netRevenue': 'net_revenue',
+            'expenses': 'expenses',
+            'difference': 'difference',
+            'foodCost': 'food_cost',
+            'differenceCost': 'd_food_cost',
+        }
+        
+        for result in platform_results:
+            platform = result['platform']
+            kpi = result['kpi']
+            
+            platform_num = platform_map.get(platform.lower())
+            if not platform_num:
+                continue
+            
+            # Build placeholders for this platform
+            placeholders = {}
+            for field, suffix in kpi_fields.items():
+                placeholder = f"{suffix}_{platform_num}"
+                value = kpi.get(field, 0)
+                placeholders[placeholder] = self._format_currency(value)
+            
+            # Replace in worksheet
+            for row in ws.iter_rows():
+                for cell in row:
+                    if cell.value and isinstance(cell.value, str):
+                        for placeholder, value in placeholders.items():
+                            if placeholder in cell.value:
+                                cell.value = cell.value.replace(placeholder, str(value))
+        
+        return ws
+    
+    def _replace_total_kpis(self, ws, total_kpi: Dict[str, float]):
+        """Replace total/aggregated KPI placeholders (no suffix)"""
+        kpi_fields = {
+            'numOrders': 'num_orders',
+            'totalSales': 'total_sales',
+            'discount': 'discount',
+            'earnings': 'earnings',
+            'actualSales': 'actual_sales',
+            'netRevenue': 'net_revenue',
+            'expenses': 'expenses',
+            'difference': 'difference',
+            'foodCost': 'food_cost',
+            'differenceCost': 'd_food_cost',
+        }
+        
+        placeholders = {}
+        for field, suffix in kpi_fields.items():
+            value = total_kpi.get(field, 0)
+            placeholders[suffix] = self._format_currency(value)
+        
+        for row in ws.iter_rows():
+            for cell in row:
+                if cell.value and isinstance(cell.value, str):
+                    for placeholder, value in placeholders.items():
+                        # Match exact placeholder (not substrings of other placeholders)
+                        pattern = r'\b' + re.escape(placeholder) + r'\b'
+                        if re.search(pattern, cell.value):
+                            cell.value = re.sub(pattern, str(value), cell.value)
+        
+        return ws
+    
+    @staticmethod
+    def _sanitize_filename(name: str) -> str:
+        """Sanitize restaurant name for filename"""
+        # Remove Arabic characters
+        name = re.sub(r'[\u0600-\u06FF]', '', name)
+        # Replace spaces with underscores
+        name = name.replace(' ', '_')
+        # Remove special characters
+        name = re.sub(r'[^\w\-_]', '', name)
+        # Limit length
+        return name[:50]
+    
+    @staticmethod
+    def _format_date(date_str: str) -> str:
+        """Convert YYYY-MM-DD to DD/MM/YYYY"""
+        try:
+            dt = datetime.strptime(date_str, '%Y-%m-%d')
+            return dt.strftime('%d/%m/%Y')
+        except ValueError:
+            return date_str
+    
+    @staticmethod
+    def _format_currency(value: float) -> str:
+        """Format number as currency string with 2 decimal places"""
+        return f"{float(value):.2f}"
+    
+    def get_export_file(self, file_path: str) -> bytes:
+        """Read export file as bytes for download"""
+        path = Path(file_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Export file not found: {file_path}")
+        
+        with open(path, 'rb') as f:
+            return f.read()
+    
+    def delete_export_file(self, file_path: str) -> bool:
+        """Delete an export file"""
+        try:
+            Path(file_path).unlink(missing_ok=True)
+            return True
+        except Exception:
+            return False
+        
+        

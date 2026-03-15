@@ -4,7 +4,7 @@ from pydantic import BaseModel # type: ignore
 from typing import List, Dict, Any
 import io
 
-from services.excel_export import generate_master_sheet
+from services.excel_export import ExcelExportService
 
 router = APIRouter()
 
@@ -37,7 +37,7 @@ class ExportRequest(BaseModel):
 def export_master_sheet(body: ExportRequest):
     """Generate and return Master Sheet Excel file"""
 
-    excel_bytes = generate_master_sheet(
+    excel_bytes = ExcelExportService(
         restaurant_name  = body.restaurantName,
         date_from        = body.dateFrom,
         date_to          = body.dateTo,

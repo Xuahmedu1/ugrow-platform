@@ -12,7 +12,7 @@ python-multipart==0.0.6
 # Database
 # ============================================
 sqlalchemy==2.0.25
-psycopg[binary]==3.2.9
+psycopg2-binary==2.9.9  # Use binary package (easier installation)
 alembic==1.13.1
 
 # ============================================

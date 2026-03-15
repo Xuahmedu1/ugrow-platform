@@ -1,53 +1,102 @@
-import type { Metadata } from 'next'
-import { DM_Sans, DM_Mono } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
+/**
+ * UGROW Root Layout
+ * Next.js app router root layout with i18n, theme, and RTL support
+ */
+
+import type { Metadata, Viewport } from 'next'
+import { Providers } from './providers'
 import './globals.css'
 
-const dmSans = DM_Sans({ 
-  subsets: ["latin"],
-  variable: '--font-dm-sans',
-  weight: ['400', '500', '600', '700']
-})
-
-const dmMono = DM_Mono({ 
-  subsets: ["latin"],
-  variable: '--font-dm-mono',
-  weight: ['400', '500']
-})
+// ============================================
+// Metadata
+// ============================================
 
 export const metadata: Metadata = {
-  title: 'U.GROW - Expand, Enhance, Earn',
-  description: 'Premium restaurant analytics and marketing platform for UAE food delivery businesses',
-  generator: 'v0.app',
+  title: {
+    default: 'UGROW - Marketing & Data Analysis Platform',
+    template: '%s | UGROW',
+  },
+  description: 'Premium marketing and restaurant data analysis platform for UAE-based agencies',
+  keywords: ['restaurant', 'analytics', 'marketing', 'data analysis', 'UAE', 'food delivery'],
+  authors: [{ name: 'UGROW' }],
+  creator: 'UGROW',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    alternateLocale: 'ar_SA',
+    url: '/',
+    siteName: 'UGROW',
+    title: 'UGROW - Marketing & Data Analysis Platform',
+    description: 'Premium marketing and restaurant data analysis platform',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'UGROW',
+    description: 'Marketing & Data Analysis Platform',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
 }
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#FFFFFF' },
+    { media: '(prefers-color-scheme: dark)', color: '#2E1C5F' },
+  ],
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+}
+
+// ============================================
+// Font Configuration
+// ============================================
+
+// Import fonts based on SRS requirements
+// Using DM Sans for English, Noto Sans Arabic for Arabic
+import { DM_Sans, Noto_Sans_Arabic } from 'next/font/google'
+
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-dm-sans',
+  display: 'swap',
+})
+
+const notoSansArabic = Noto_Sans_Arabic({
+  subsets: ['arabic'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-noto-arabic',
+  display: 'swap',
+})
+
+// ============================================
+// Root Layout Component
+// ============================================
+
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${dmSans.variable} ${dmMono.variable} font-sans antialiased`}>
-        {children}
-        <Analytics />
+    <html
+      lang="en"
+      dir="ltr"
+      className={`${dmSans.variable} ${notoSansArabic.variable}`}
+      suppressHydrationWarning
+    >
+      <body className="min-h-screen bg-white font-sans antialiased">
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   )

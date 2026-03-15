@@ -18,7 +18,7 @@ import base64
 
 from sqlalchemy.orm import Session
 from models import User, UserRole, UserStatus, RestaurantStatus
-
+from database import get_db
 
 # ============================================
 # Configuration
@@ -277,4 +277,3 @@ async def get_current_admin(
 
 
 # Import here to avoid circular dependency
-from database import get_db

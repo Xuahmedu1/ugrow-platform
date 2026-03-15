@@ -10,7 +10,7 @@ from typing import Generator
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
-from models import Base, get_engine, get_session_maker, init_db
+from models import Base
 
 # ============================================
 # Configuration
@@ -25,8 +25,19 @@ DATABASE_URL = os.getenv(
 # Engine and Session Factory
 # ============================================
 
+def get_engine(database_url: str):
+    """Create database engine with proper settings"""
+    return create_engine(
+        database_url,
+        pool_size=10,
+        max_overflow=20,
+        pool_pre_ping=True,  # Verify connections before using
+        pool_recycle=3600,   # Recycle connections after 1 hour
+        echo=False,          # Set to True for SQL debugging
+    )
+
 engine = get_engine(DATABASE_URL)
-SessionLocal = get_session_maker(engine)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 # ============================================
@@ -65,6 +76,11 @@ def get_db() -> Generator[Session, None, None]:
 # ============================================
 # Database Initialization
 # ============================================
+
+def init_db(engine):
+    """Initialize database - create all tables"""
+    Base.metadata.create_all(bind=engine)
+
 
 def init_database():
     """Initialize database tables"""
@@ -129,6 +145,7 @@ def seed_admin_user():
             auth_service = AuthService(session)
             password_hash = auth_service.hash_password(admin_password)
             
+            import uuid
             admin = User(
                 id=uuid.uuid4(),
                 username="admin",

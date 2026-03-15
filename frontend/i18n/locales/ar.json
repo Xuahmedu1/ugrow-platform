@@ -1,0 +1,283 @@
+{
+  "app": {
+    "name": "يوجرو",
+    "tagline": "منصة التسويق وتحليل البيانات",
+    "loading": "جاري التحميل...",
+    "error": "حدث خطأ",
+    "retry": "إعادة المحاولة",
+    "confirm": "تأكيد",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "view": "عرض",
+    "close": "إغلاق",
+    "back": "رجوع",
+    "next": "التالي",
+    "submit": "إرسال",
+    "search": "بحث",
+    "filter": "تصفية",
+    "clear": "مسح",
+    "download": "تحميل",
+    "export": "تصدير",
+    "upload": "رفع",
+    "dragDrop": "اسحب الملفات هنا أو انقر للاختيار",
+    "processing": "جاري المعالجة...",
+    "success": "نجاح",
+    "warning": "تحذير",
+    "info": "معلومات"
+  },
+
+  "auth": {
+    "login": "تسجيل الدخول",
+    "logout": "تسجيل الخروج",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "showPassword": "إظهار كلمة المرور",
+    "hidePassword": "إخفاء كلمة المرور",
+    "rememberMe": "تذكرني",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+    "emailDomainError": "يجب أن ينتهي البريد الإلكتروني بـ @ugrow.com",
+    "accountOnHold": "حسابك معلق حالياً. يرجى التواصل مع يوجرو.",
+    "accountDeactivated": "تم إلغاء تنشيط حسابك. يرجى التواصل مع يوجرو.",
+    "restaurantOnHold": "حساب مطعمك معلق حالياً. يرجى التواصل مع يوجرو.",
+    "restaurantDeactivated": "تم إلغاء تنشيط حساب مطعمك. يرجى التواصل مع يوجرو.",
+    "sessionExpired": "انتهت صلاحية جلستك. يرجى تسجيل الدخول مرة أخرى.",
+    "unauthorized": "غير مصرح لك بالوصول إلى هذا المورد.",
+    "adminCredentials": "بيانات اعتماد المشرف لا يمكن تغييرها",
+    "loginButton": "تسجيل الدخول",
+    "loggingIn": "جاري تسجيل الدخول..."
+  },
+
+  "navigation": {
+    "dashboard": "لوحة التحكم",
+    "restaurants": "المطاعم",
+    "analysis": "تحليل البيانات",
+    "reports": "التقارير",
+    "myReports": "تقاريري",
+    "credentials": "بيانات اعتماد المنصات",
+    "about": "عن يوجرو",
+    "contact": "تواصل معنا",
+    "profile": "الملف الشخصي",
+    "settings": "الإعدادات",
+    "language": "اللغة",
+    "switchToArabic": "التبديل إلى العربية",
+    "switchToEnglish": "التبديل إلى الإنجليزية"
+  },
+
+  "restaurant": {
+    "title": "إدارة المطاعم",
+    "addNew": "إضافة مطعم",
+    "editRestaurant": "تعديل المطعم",
+    "viewRestaurant": "عرض المطعم",
+    "details": "تفاصيل المطعم",
+    "name": "اسم المطعم",
+    "ownerName": "اسم المالك",
+    "ownerPhone": "هاتف المالك",
+    "managerName": "اسم المدير",
+    "managerPhone": "هاتف المدير",
+    "area": "المنطقة / الحي",
+    "address": "عنوان الشارع",
+    "googleMaps": "رابط خرائط جوجل",
+    "profileImage": "الصورة الشخصية / الشعار",
+    "platforms": "المنصات النشطة",
+    "status": "حالة الحساب",
+    "statusActive": "نشط",
+    "statusHold": "معلق",
+    "statusDeactivated": "غير نشط",
+    "noRestaurants": "لم يتم العثور على مطاعم",
+    "searchPlaceholder": "البحث في المطاعم...",
+    "changeStatus": "تغيير الحالة",
+    "confirmStatusChange": "هل أنت متأكد من تغيير الحالة إلى {{status}}؟",
+    "clientCredentials": "بيانات اعتماد تسجيل دخول العميل",
+    "username": "اسم المستخدم",
+    "usernameSuffix": "@ugrow.com",
+    "generatePassword": "إنشاء كلمة مرور",
+    "credentialsHelp": "سيتم استخدام هذا البريد وكلمة المرور لتسجيل دخول العميل",
+    "createdAt": "تاريخ الإنشاء",
+    "updatedAt": "آخر تحديث",
+    "location": "الموقع",
+    "expandLocation": "إظهار تفاصيل الموقع",
+    "collapseLocation": "إخفاء تفاصيل الموقع"
+  },
+
+  "platform": {
+    "talabat": "طلبات",
+    "keeta": "كيتا",
+    "noon": "نون",
+    "smiles": "سميلز",
+    "deliveroo": "ديليفرو",
+    "careem": "كريم",
+    "selectPlatforms": "اختيار المنصات",
+    "platformSettings": "إعدادات المنصة",
+    "credentialType": "نوع بيانات الاعتماد",
+    "portal": "وصول البوابة",
+    "tablet": "وصول الجهاز اللوحي",
+    "loginEmail": "البريد الإلكتروني / اسم المستخدم",
+    "platformPassword": "كلمة مرور المنصة",
+    "addCredential": "إضافة بيانات اعتماد",
+    "addTabletAccess": "إضافة وصول الجهاز اللوحي",
+    "copyEmail": "نسخ البريد الإلكتروني",
+    "copyPassword": "نسخ كلمة المرور",
+    "showPassword": "إظهار كلمة المرور",
+    "hidePassword": "إخفاء كلمة المرور",
+    "credentialsReadOnly": "بيانات الاعتماد للقراءة فقط للعملاء",
+    "noCredentials": "لا توجد بيانات اعتماد مكونة لهذه المنصة"
+  },
+
+  "analysis": {
+    "title": "تحليل البيانات",
+    "newAnalysis": "تحليل جديد",
+    "step": "الخطوة {{step}} من {{total}}",
+    "selectRestaurant": "اختيار المطعم",
+    "selectDateRange": "اختيار نطاق التاريخ",
+    "selectPlatforms": "اختيار المنصات",
+    "uploadSheets": "رفع ملفات المنصات",
+    "reviewResults": "مراجعة النتائج",
+    "fromDate": "من تاريخ",
+    "toDate": "إلى تاريخ",
+    "dateRangeInvalid": "يرجى اختيار نطاق تاريخ صالح",
+    "noPlatformsSelected": "يرجى اختيار منصة واحدة على الأقل",
+    "uploadRequired": "يرجى رفع الملفات لجميع المنصات المختارة",
+    "restaurantRequired": "يرجى اختيار مطعم",
+    "settingsRequired": "يرجى تكوين إعدادات المنصة",
+    "actualSalesRate": "نسبة المبيعات الفعلية %",
+    "foodCostRate": "نسبة تكلفة الطعام %",
+    "settingsHelp": "تستخدم هذه النسبات لحساب المبيعات الفعلية وتكلفة الطعام والمؤشرات الرئيسية المرتبطة",
+    "fileTypes": {
+      "talabat": "يقبل: ملفات .xlsx",
+      "keeta": "يقبل: ملفات .xlsx",
+      "noon": "يقبل: ملفات .csv",
+      "smiles": "يقبل: ملفات .xls",
+      "deliveroo": "يقبل: ملفات .csv متعددة",
+      "careem": "يقبل: ملفات .xlsx"
+    },
+    "uploadSuccess": "تم رفع الملف بنجاح",
+    "uploadError": "خطأ في رفع الملف",
+    "processingFiles": "جاري معالجة الملفات...",
+    "calculatingKPIs": "جاري حساب المؤشرات الرئيسية...",
+    "saveReport": "حفظ التقرير في السجل",
+    "exportMasterSheet": "تصدير ورقة العمل الرئيسية",
+    "reportSaved": "تم حفظ التقرير بنجاح",
+    "exportSuccess": "تم تصدير ملف Excel بنجاح",
+    "unsavedChanges": "لديك تغييرات غير محفوظة. هل أنت متأكد من المغادرة؟"
+  },
+
+  "kpi": {
+    "title": "نتائج المؤشرات الرئيسية",
+    "total": "الإجمالي (جميع المنصات)",
+    "numOrders": {
+      "label": "عدد الطلبات",
+      "description": "إجمالي الطلبات المستلمة"
+    },
+    "totalSales": {
+      "label": "إجمالي المبيعات",
+      "description": "قيم الطلبات الإجمالية"
+    },
+    "discount": {
+      "label": "الخصم",
+      "description": "الخصومات الممولة من البائع"
+    },
+    "earnings": {
+      "label": "الأرباح",
+      "description": "إجمالي المبيعات - الخصم"
+    },
+    "actualSales": {
+      "label": "المبيعات الفعلية",
+      "description": "بناءً على نسبة المبيعات الفعلية %",
+      "requiresSettings": "يتطلب نسبة المبيعات الفعلية %"
+    },
+    "netRevenue": {
+      "label": "صافي الإيرادات",
+      "description": "مجموع مبالغ الدفع"
+    },
+    "expenses": {
+      "label": "المصروفات",
+      "description": "الأرباح - صافي الإيرادات"
+    },
+    "difference": {
+      "label": "الفرق",
+      "description": "صافي الإيرادات - المبيعات الفعلية",
+      "requiresSettings": "يتطلب نسبة المبيعات الفعلية %"
+    },
+    "foodCost": {
+      "label": "تكلفة الطعام",
+      "description": "بناءً على نسبة تكلفة الطعام %",
+      "requiresSettings": "يتطلب نسبة تكلفة الطعام %"
+    },
+    "differenceCost": {
+      "label": "فرق التكلفة",
+      "description": "صافي الإيرادات - تكلفة الطعام",
+      "requiresSettings": "يتطلب كلا النسبتين"
+    },
+    "currency": "درهم",
+    "noData": "لا توجد بيانات متاحة لنطاق التاريخ المحدد",
+    "calculating": "جاري الحساب...",
+    "setPercentages": "قم بتعيين النسبات لعرض المؤشرات المحسوبة"
+  },
+
+  "reports": {
+    "title": "سجل التقارير",
+    "myReports": "تقاريري",
+    "reportDetails": "تفاصيل التقرير",
+    "dateRange": "نطاق التاريخ",
+    "platformsIncluded": "المنصات المضمنة",
+    "generatedBy": "تم الإنشاء بواسطة",
+    "generatedAt": "تاريخ الإنشاء",
+    "viewReport": "عرض التقرير",
+    "downloadExcel": "تحميل Excel",
+    "deleteReport": "حذف التقرير",
+    "confirmDelete": "هل أنت متأكد من حذف هذا التقرير؟ لا يمكن التراجع عن هذا الإجراء.",
+    "noReports": "لم يتم العثور على تقارير",
+    "noReportsClient": "لا توجد تقارير متاحة. ستشاركك وكالتك التقارير هنا.",
+    "reportDeleted": "تم حذف التقرير بنجاح",
+    "reportNotFound": "التقرير غير موجود",
+    "filters": {
+      "all": "جميع التقارير",
+      "thisMonth": "هذا الشهر",
+      "lastMonth": "الشهر الماضي",
+      "custom": "نطاق مخصص"
+    }
+  },
+
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "email": "يرجى إدخال بريد إلكتروني صالح",
+    "minLength": "يجب أن يكون على الأقل {{min}} أحرف",
+    "maxLength": "يجب أن يكون على الأكثر {{max}} حرفاً",
+    "numeric": "يرجى إدخال رقم صالح",
+    "percentage": "يرجى إدخال قيمة بين 0 و 100",
+    "date": "يرجى إدخال تاريخ صالح",
+    "fileType": "نوع ملف غير صالح. المقبول: {{types}}",
+    "fileSize": "الملف كبير جداً. الحد الأقصى: {{size}}ميجابايت"
+  },
+
+  "errors": {
+    "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+    "network": "خطأ في الشبكة. يرجى التحقق من اتصالك.",
+    "server": "خطأ في الخادم. يرجى المحاولة لاحقاً.",
+    "notFound": "الصفحة غير موجودة",
+    "unauthorized": "وصول غير مصرح",
+    "forbidden": "الوصول ممنوع",
+    "validation": "يرجى التحقق من المدخلات والمحاولة مرة أخرى",
+    "fileParse": "خطأ في تحليل الملف. يرجى التحقق من تنسيق الملف.",
+    "calculation": "خطأ في حساب المؤشرات الرئيسية. يرجى التحقق من البيانات."
+  },
+
+  "splash": {
+    "welcome": "مرحباً بك في يوجرو",
+    "clickToContinue": "انقر في أي مكان للمتابعة"
+  },
+
+  "comingSoon": {
+    "title": "قريباً",
+    "description": "هذه الميزة قيد الإنشاء. تفقد لاحقاً!",
+    "backToReports": "العودة إلى التقارير"
+  },
+
+  "footer": {
+    "copyright": "© {{year}} يوجرو. جميع الحقوق محفوظة.",
+    "version": "الإصدار {{version}}"
+  }
+}
